@@ -199,8 +199,8 @@ def normalize_rows(dataFrame):
         nrm = dataFrame.div(dataFrame.sum(axis=1), axis=0)
         nrm.fillna(0, inplace=True)
         return nrm
-    except:
-        print("Division by zero")
+    except Exception as e:
+        print(e)
 
 
 def read_folder(dir, ext):
