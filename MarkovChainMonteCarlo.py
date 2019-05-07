@@ -148,7 +148,7 @@ class MonteCarlo(Model):
             for t in range(self.time):
                 if t != 0:
                     # Multiply current state and transition matrix, resulting in a probability vector
-                    pV = cS.dot(self.model.matrix)
+                    pV = cS.dot(np.linalg.matrix_power(self.model.matrix, t))
                     cS = self.sample(self.model.vS, pV, i, cS)
                 else:
                     for state, prob in zip(self.model.vS, cS):
