@@ -225,6 +225,6 @@ for initialState in range(1, nStates):
     iS = np.array([0 if i != initialState else 1 for i in range(nStates)])
     simulation = markov_chain_monte_carlo(time, Q, vS, iS, iterations=iterations)
     c = pd.concat(simulation, axis=1)
-    plt.plot(c.mode(axis=1), linestype=':')
+    plt.plot(c.mode(axis=1), linestyle=':')
     plt.plot(c.mean(axis=1))
 plt.show()
