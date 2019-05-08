@@ -67,7 +67,7 @@ def concat_data(dataFrame, columns, index=None):
     return cnc
 
 
-def count_matrix(data, matrix, columns=None, hst=False):
+def count_matrix(data, matrix, columns=None, hst=False, offset=None):
     """
     Count data and store the count in matrix (pre-labeled DataFrame objects)
     columns is a list of column labels
@@ -79,7 +79,7 @@ def count_matrix(data, matrix, columns=None, hst=False):
     for i, row in enumerate(data.iterrows()):
         for j, column in enumerate(data.loc[row[0], :]):
             if hst:
-                matrix[data.iloc[i, j]].append(int(columns[j]) - 1991)
+                matrix[data.iloc[i, j]].append(int(columns[j]) - (offset - 1))
             elif columns:  # If columns are specified: row=the value in (i,j), column=column j
                 matrix.loc[data.iloc[i, j], columns[j]] += 1
             else:  # If nothing is specified: transition matrix is assumed
@@ -142,8 +142,8 @@ def clean_data(dataFrame, columns):
     return cln
 
 
-def get_transition_matrix(data, vS):
-    return normalize_rows(count_matrix(data, pd.DataFrame(index=vS, columns=vS)))
+def get_transition_matrix(data, vS, offset=None):
+    return normalize_rows(count_matrix(data, pd.DataFrame(index=vS, columns=vS), offset=offset))
 
 
 def sample(simulation, vS, pV, iteration):
@@ -208,19 +208,23 @@ def neural_net_monte_carlo(time, network, vS, iS, iterations):
 plt.ylim(0, 9)
 dataDir = 'data'
 item = 'DECK_COND_058'
-iterations = 1000
+iterations = 100
 clean = True
+nStates = 10
+offset = 1992
 
 data, yrs = process_data(item=item, directory=dataDir, ext='txt', clean=clean)
-o = data.T.astype('int8').mean(axis=1)
-o.index = o.index.astype(int) - 1992
-plt.plot(o)
+o = data.T.astype('int8')
+o.index = o.index.astype(int) - offset
+plt.plot(o.mode(axis=1), linestyle=':')
+plt.plot(o.mean(axis=1))
 vS = tuple(range(10))
-for initialState in range(1, 10):
-    iS = np.array([0 if i != initialState else 1 for i in range(10)])
-    time = len(data.columns)
-    Q = get_transition_matrix(data, vS)
+time = len(data.columns)
+Q = get_transition_matrix(data, vS, offset=offset)
+for initialState in range(1, nStates):
+    iS = np.array([0 if i != initialState else 1 for i in range(nStates)])
     simulation = markov_chain_monte_carlo(time, Q, vS, iS, iterations=iterations)
-    c = pd.concat(simulation, axis=1).mean(axis=1)
-    plt.plot(c)
+    c = pd.concat(simulation, axis=1)
+    plt.plot(c.mode(axis=1), linestype=':')
+    plt.plot(c.mean(axis=1))
 plt.show()
