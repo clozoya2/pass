@@ -33,6 +33,11 @@ ID = None  # 'STRUCTURE_NUMBER_008'
 NA_VALUES = ['N']
 SEPARATOR = ','
 
+"""
+The directory containing the data to be read and the directory
+where the query results are to be stored are specified by the
+dataDir and resultsDir variables respectively.
+"""
 dataDir = 'data'
 resultsDir = 'results'
 
