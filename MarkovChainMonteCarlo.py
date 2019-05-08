@@ -205,20 +205,22 @@ def neural_net_monte_carlo(time, network, vS, iS, iterations):
     return simulation
 
 
-#EXAMPLE USE
+plt.ylim(0, 9)
 dataDir = 'data'
 item = 'DECK_COND_058'
+iterations = 1000
 clean = True
+
 data, yrs = process_data(item=item, directory=dataDir, ext='txt', clean=clean)
 o = data.T.astype('int8').mean(axis=1)
 o.index = o.index.astype(int) - 1992
 plt.plot(o)
 vS = tuple(range(10))
-iS = np.array([0 if i != 8 else 1 for i in range(10)])
-time = len(data.columns)
-Q = get_transition_matrix(data, vS)
-simulation = markov_chain_monte_carlo(time, Q, vS, iS, iterations=1000)
-c = pd.concat(simulation, axis=1).mean(axis=1)
-print(c.index)
-plt.plot(c)
+for initialState in range(1, 10):
+    iS = np.array([0 if i != initialState else 1 for i in range(10)])
+    time = len(data.columns)
+    Q = get_transition_matrix(data, vS)
+    simulation = markov_chain_monte_carlo(time, Q, vS, iS, iterations=iterations)
+    c = pd.concat(simulation, axis=1).mean(axis=1)
+    plt.plot(c)
 plt.show()
