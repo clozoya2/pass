@@ -188,14 +188,14 @@ def markov_chain_monte_carlo(time, matrix, vS, iS, iterations):
     return simulation
 
 
-def neural_net_monte_carlo(time, network, vS, iS, iterations):
+def model_monte_carlo(time, model, vS, iS, iterations):
     simulation = []
     for i in range(iterations):
         simulation.append([])
         cS = iS
         for t in range(time):
             if t != 0:
-                pV = network.predict(cS)
+                pV = model.predict(cS)
                 simulation, cS = sample(simulation, vS, pV, i)
             else:
                 for state, prob in zip(vS, cS):
@@ -223,8 +223,13 @@ time = len(data.columns)
 Q = get_transition_matrix(data, vS, offset=offset)
 for initialState in range(1, nStates):
     iS = np.array([0 if i != initialState else 1 for i in range(nStates)])
-    simulation = markov_chain_monte_carlo(time, Q, vS, iS, iterations=iterations)
-    c = pd.concat(simulation, axis=1)
+    simulationA = markov_chain_monte_carlo(time, Q, vS, iS, iterations=iterations)
+    c = pd.concat(simulationA, axis=1)
     plt.plot(c.mode(axis=1), linestyle=':')
     plt.plot(c.mean(axis=1))
+    
+    simulationB = model_monte_carlo(time, model, vS, iS, iterations=iterations)
+    c = pd.concat(simulationB, axis=1)
+    plt.plot(c.mode(axis=1), linestyle='.')
+    plt.plot(c.mean(axis=1), linestyle='x')
 plt.show()
