@@ -8,6 +8,7 @@ import re
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from sklearn.externals import joblib
 
 random.seed(0)
 np.random.seed(0)
@@ -166,8 +167,12 @@ def sample(simulation, vS, pV, iteration):
         for state, prob in zip(vS, pV):
             sum += prob
             if (sum >= randomNumber):
-                simulation[iteration].append(state)
-                return simulation, np.transpose((pd.Series([1 if s == state else 0 for s in vS], index=vS)))
+                if state > simulation[-1][-1]:
+                    simulation[iteration].append(simulation[-1][-1])
+                    return simulation, np.transpose((pd.Series([1 if s == simulation[-1][-1] else 0 for s in vS], index=vS)))
+                else:
+                    simulation[iteration].append(state)
+                    return simulation, np.transpose((pd.Series([1 if s == state else 0 for s in vS], index=vS)))
 
 
 def markov_chain_monte_carlo(time, matrix, vS, iS, iterations):
@@ -190,12 +195,18 @@ def markov_chain_monte_carlo(time, matrix, vS, iS, iterations):
 
 def model_monte_carlo(time, model, vS, iS, iterations):
     simulation = []
+    age = np.array([time])
+    kind = np.array([0 if i != 1 else 1 for i in range(9)])
+    type = np.array([0 if i != 19 else 1 for i in range(22)])
+
     for i in range(iterations):
         simulation.append([])
         cS = iS
         for t in range(time):
+            #print(np.argmax(cS))
             if t != 0:
-                pV = model.predict(cS)
+                cS = np.hstack([age, np.argmax(cS), kind, type])
+                pV = model.predict_proba([cS])[0]
                 simulation, cS = sample(simulation, vS, pV, i)
             else:
                 for state, prob in zip(vS, cS):
@@ -206,9 +217,9 @@ def model_monte_carlo(time, model, vS, iS, iterations):
 
 
 plt.ylim(0, 9)
-dataDir = 'data'
+dataDir = 'training'
 item = 'DECK_COND_058'
-iterations = 100
+iterations = 10000
 clean = True
 nStates = 10
 offset = 1992
@@ -216,20 +227,29 @@ offset = 1992
 data, yrs = process_data(item=item, directory=dataDir, ext='txt', clean=clean)
 o = data.T.astype('int8')
 o.index = o.index.astype(int) - offset
-plt.plot(o.mode(axis=1), linestyle=':')
-plt.plot(o.mean(axis=1))
+#plt.plot(o.mode(axis=1), linestyle=':')
+plt.plot(o.mean(axis=1), linestyle='--')
 vS = tuple(range(10))
 time = len(data.columns)
-Q = get_transition_matrix(data, vS, offset=offset)
-for initialState in range(1, nStates):
+#Q = get_transition_matrix(data, vS, offset=offset)
+model = joblib.load("model.joblib.dat")
+plt.xlabel('Time')
+plt.ylabel('Condition')
+plt.title('{} Gradient Boost Simulations'.format(iterations))
+for initialState in range(9, nStates):
     iS = np.array([0 if i != initialState else 1 for i in range(nStates)])
-    simulationA = markov_chain_monte_carlo(time, Q, vS, iS, iterations=iterations)
-    c = pd.concat(simulationA, axis=1)
-    plt.plot(c.mode(axis=1), linestyle=':')
-    plt.plot(c.mean(axis=1))
-    
-    simulationB = model_monte_carlo(time, model, vS, iS, iterations=iterations)
+    #simulationA = markov_chain_monte_carlo(100, Q, vS, iS, iterations=iterations)
+    #c = pd.concat(simulationA, axis=1)
+    #plt.plot(c.mode(axis=1), linestyle=':')
+    #plt.plot(c, linewidth=0.5)
+    #plt.plot(c.mean(axis=1), linewidth=2.0)
+
+
+    simulationB = model_monte_carlo(100, model, vS, iS, iterations=iterations)
     c = pd.concat(simulationB, axis=1)
-    plt.plot(c.mode(axis=1), linestyle='.')
-    plt.plot(c.mean(axis=1), linestyle='x')
+    #plt.plot(c.mode(axis=1))
+    plt.plot(c,  linestyle=':', linewidth=0.5)
+    plt.plot(c.mean(axis=1), linewidth=2.0, label='Simulations Mean')
+plt.legend(loc='best')
+
 plt.show()
